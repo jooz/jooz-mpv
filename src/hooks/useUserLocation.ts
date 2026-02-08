@@ -50,8 +50,8 @@ export function useUserLocationLogic() {
 
                 if (stateData) {
                     // 2. Match Municipality
-                    // address.city or address.subRegion might have it
-                    const possibleNames = [address.city, address.subRegion, address.district].filter(Boolean);
+                    // address.city or address.subregion might have it
+                    const possibleNames = [address.city, address.subregion, address.district].filter(Boolean);
 
                     let municipalityData = null;
                     for (const name of possibleNames) {

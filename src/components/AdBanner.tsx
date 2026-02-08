@@ -20,12 +20,12 @@ try {
     console.warn('AdMob native module not available in this environment');
 }
 
-const adUnitId = __DEV__
-    ? (TestIds?.BANNER || 'ca-app-pub-3940256099942544/6300978111')
+const adUnitId = (__DEV__ || !process.env.EXPO_PUBLIC_AD_UNIT_ID_BANNER_ANDROID)
+    ? TestIds?.BANNER
     : Platform.select({
-        android: 'ca-app-pub-3940256099942544/6300978111',
-        ios: 'ca-app-pub-3940256099942544/2934735716',
-        default: TestIds?.BANNER || 'ca-app-pub-3940256099942544/6300978111',
+        android: process.env.EXPO_PUBLIC_AD_UNIT_ID_BANNER_ANDROID,
+        ios: process.env.EXPO_PUBLIC_AD_UNIT_ID_BANNER_IOS || TestIds?.BANNER,
+        default: TestIds?.BANNER,
     });
 
 interface AdBannerProps {

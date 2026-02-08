@@ -11,13 +11,15 @@ import { supabase } from '../../lib/supabase';
 const getGoogleSignin = () => {
     try {
         const isWeb = Platform.OS === 'web';
-        const isExpoGo = Constants.appOwnership === 'expo' || !Constants.appOwnership;
+        // En un build nativo (APK), appOwnership es null. 
+        // Solo debemos evitar cargar el módulo en Expo Go.
+        const isExpoGo = Constants.appOwnership === 'expo';
 
         if (!isWeb && !isExpoGo) {
             return require('@react-native-google-signin/google-signin');
         }
     } catch (e) {
-        console.log('[Google Auth] Módulo nativo no encontrado (Normal en Expo Go)');
+        console.log('[Google Auth] Módulo nativo no encontrado');
     }
     return null;
 };
@@ -26,13 +28,23 @@ export default function Login() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
+    React.useEffect(() => {
+        const GoogleModule = getGoogleSignin();
+        if (GoogleModule) {
+            GoogleModule.GoogleSignin.configure({
+                webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+                offlineAccess: true,
+            });
+        }
+    }, []);
+
     async function signInWithGoogle() {
         const GoogleModule = getGoogleSignin();
 
         if (!GoogleModule) {
             Alert.alert(
                 'Entorno no compatible',
-                'El inicio de sesión automático con Google requiere un Build de Desarrollo o una App Instalada.\n\nEn Expo Go, puedes presionar "Continuar sin cuenta" para probar la aplicación.'
+                'El inicio de sesión con Google no está disponible en este entorno (como Expo Go).\n\nSi estás usando la APK, asegúrate de que el módulo nativo se haya incluido correctamente.'
             );
             return;
         }
@@ -80,12 +92,12 @@ export default function Login() {
                 {/* Top Section: Branding */}
                 <View className="items-center mt-10">
                     <View className="bg-primary w-24 h-24 rounded-3xl items-center justify-center shadow-2xl shadow-primary/40 rotate-12">
-                        <MaterialIcons name="shopping-basket" size={56} color="#102216" />
+                        <MaterialIcons name="analytics" size={56} color="#102216" />
                     </View>
 
                     <View className="mt-8 items-center">
-                        <Text className="text-white text-5xl font-black tracking-tight">Jooz</Text>
-                        <Text className="text-primary/70 text-lg font-medium mt-1">SincroVzla</Text>
+                        <Text className="text-white text-5xl font-black tracking-tight">Sincro</Text>
+                        <Text className="text-primary/70 text-lg font-medium mt-1">Precios Venezuela</Text>
                     </View>
                 </View>
 
@@ -118,16 +130,9 @@ export default function Login() {
                         )}
                     </TouchableOpacity>
 
-                    <TouchableOpacity
-                        className="mt-6 py-4"
-                        onPress={() => router.replace('/(tabs)')}
-                    >
-                        <Text className="text-gray-500 text-center font-bold text-sm uppercase tracking-widest">
-                            Continuar sin cuenta
-                        </Text>
-                    </TouchableOpacity>
+                    {/* Removed 'Continuar sin cuenta' as requested for production-ready designs */}
 
-                    <View className="mt-8 items-center">
+                    <View className="mt-12 items-center">
                         <Text className="text-gray-600 text-xs text-center">
                             Al continuar, aceptas nuestros términos y políticas de privacidad.
                         </Text>
@@ -137,4 +142,5 @@ export default function Login() {
         </SafeAreaView>
     );
 }
+
 

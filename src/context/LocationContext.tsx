@@ -33,6 +33,12 @@ const STATE_COORDINATES: Record<string, { lat: number; lng: number; name: string
     'Táchira': { lat: 7.92, lng: -72.25, name: 'Táchira' },
     'Mérida': { lat: 8.59, lng: -71.15, name: 'Mérida' },
     'Bolívar': { lat: 6.0, lng: -63.5, name: 'Bolívar' },
+    'Falcón': { lat: 11.411, lng: -69.673, name: 'Falcón' },
+    'Falcón (Punto Fijo)': { lat: 11.7, lng: -70.2, name: 'Falcón' },
+    'Barinas': { lat: 8.622, lng: -70.233, name: 'Barinas' },
+    'Portuguesa': { lat: 9.052, lng: -69.255, name: 'Portuguesa' },
+    'Monagas': { lat: 9.743, lng: -63.178, name: 'Monagas' },
+    'Sucre': { lat: 10.453, lng: -64.182, name: 'Sucre' },
 };
 
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -69,7 +75,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     });
     const [loading, setLoading] = useState(true);
 
-    // Detect location using GPS
+    // detectLocation using GPS and Geocoding
     const detectLocation = async () => {
         try {
             // Request permissions
@@ -86,32 +92,86 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
             const { latitude, longitude } = position.coords;
 
-            // Find nearest state
-            const nearestStateName = findNearestState(latitude, longitude);
-            if (!nearestStateName) {
-                console.log('Could not determine state from coordinates');
+            // Use Reverse Geocoding for high accuracy
+            const [address] = await Location.reverseGeocodeAsync({
+                latitude,
+                longitude,
+            });
+
+            let stateNameDetected = address?.region || null;
+            let municipalityDetected = address?.city || address?.subregion || address?.district || null;
+
+            // Fallback to nearest state if geocoding fails to give a region
+            if (!stateNameDetected) {
+                stateNameDetected = findNearestState(latitude, longitude);
+            }
+
+            if (!stateNameDetected) {
+                console.log('Could not determine state');
                 return;
             }
+
+            // Match State in DB (Resilient search)
+            // We search with and without accents
+            const searchName = stateNameDetected.replace(/[áéíóú]/gi, (match) => {
+                const map: Record<string, string> = { 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u' };
+                return map[match.toLowerCase()] || match;
+            });
+
+            console.log('Searching for state:', stateNameDetected, 'Search pattern:', searchName);
 
             // Fetch state from database
-            const { data: stateData, error: stateError } = await supabase
+            // Try exact match first, then fuzzy
+            let { data: stateData } = await supabase
                 .from('states')
                 .select('id, name')
-                .eq('name', nearestStateName)
-                .single();
+                .ilike('name', `%${stateNameDetected}%`)
+                .maybeSingle();
 
-            if (stateError || !stateData) {
-                console.warn('State not found in database:', nearestStateName);
+            if (!stateData) {
+                // Try without accents if possible or just the first 4 chars
+                const { data: fallbackState } = await supabase
+                    .from('states')
+                    .select('id, name')
+                    .ilike('name', `%${stateNameDetected.substring(0, 4)}%`)
+                    .maybeSingle();
+                stateData = fallbackState;
+            }
+
+            if (!stateData) {
+                console.warn('State not found in database:', stateNameDetected);
                 return;
             }
 
-            // Fetch first municipality for this state (default)
-            const { data: municipalityData } = await supabase
-                .from('municipalities')
-                .select('id, name')
-                .eq('state_id', stateData.id)
-                .limit(1)
-                .single();
+            // Fetch municipality
+            let municipalityData = null;
+            if (municipalityDetected) {
+                // Alias mapping for common names that differ from DB
+                const aliases: Record<string, string> = {
+                    'Punto Fijo': 'Carirubana',
+                    'Caracas': 'Libertador',
+                };
+                const searchMuni = aliases[municipalityDetected] || municipalityDetected;
+
+                const { data: muniMatch } = await supabase
+                    .from('municipalities')
+                    .select('id, name')
+                    .eq('state_id', stateData.id)
+                    .ilike('name', `%${searchMuni}%`)
+                    .maybeSingle();
+                municipalityData = muniMatch;
+            }
+
+            // Default to first municipality if none detected/matched
+            if (!municipalityData) {
+                const { data: defaultMuni } = await supabase
+                    .from('municipalities')
+                    .select('id, name')
+                    .eq('state_id', stateData.id)
+                    .limit(1)
+                    .maybeSingle();
+                municipalityData = defaultMuni;
+            }
 
             const newLocation: UserLocation = {
                 state_id: stateData.id,
@@ -123,7 +183,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
             };
 
             await setLocation(newLocation);
-            console.log('Location detected:', newLocation);
+            console.log('Location detected successfully:', newLocation);
         } catch (error) {
             console.error('Error detecting location:', error);
         }

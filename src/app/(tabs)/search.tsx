@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdBanner from '../../components/AdBanner';
 import { useExchangeRates } from '../../context/ExchangeRateContext';
@@ -58,7 +58,10 @@ export default function SearchScreen() {
 
             const { data, error } = await query.limit(50);
 
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase Error:', error);
+                throw error;
+            }
 
             const formatted = (data || []).map(p => {
                 const localPrices = p.prices?.filter((pr: any) =>
@@ -73,8 +76,9 @@ export default function SearchScreen() {
             });
 
             setProducts(formatted);
-        } catch (e) {
+        } catch (e: any) {
             console.error('Error fetching products:', e);
+            Alert.alert('Error de Conexión', 'No pudimos conectar con el servidor. Por favor verifica tu internet o intenta más tarde.');
         } finally {
             setLoading(false);
         }

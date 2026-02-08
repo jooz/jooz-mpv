@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "sincroVzla",
+    "name": "SincroVzla",
     "slug": "silent-tyson",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sincroVzla",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0a1e12"
     },
     "ios": {
       "supportsTablet": true,
@@ -44,8 +44,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
-          "iosAppId": "ca-app-pub-3940256099942544~3347511713",
+          "androidAppId": "ca-app-pub-4690411319254964~1168203165",
+          "iosAppId": "ca-app-pub-4690411319254964~1168203165",
           "user_tracking_usage_description": "Este identificador se utilizará para ofrecerte anuncios personalizados."
         }
       ]

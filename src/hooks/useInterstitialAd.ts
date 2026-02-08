@@ -15,12 +15,12 @@ try {
         AdEventType = AdModule.AdEventType;
         TestIds = AdModule.TestIds;
 
-        const adUnitId = __DEV__
+        const adUnitId = (__DEV__ || !process.env.EXPO_PUBLIC_AD_UNIT_ID_INTERSTITIAL_ANDROID)
             ? TestIds.INTERSTITIAL
             : Platform.select({
-                android: 'ca-app-pub-3940256099942544/1033173712',
-                ios: 'ca-app-pub-3940256099942544/4411468910',
-                default: TestIds.INTERSTITIAL, // Corrected default to TestIds properties
+                android: process.env.EXPO_PUBLIC_AD_UNIT_ID_INTERSTITIAL_ANDROID,
+                ios: process.env.EXPO_PUBLIC_AD_UNIT_ID_INTERSTITIAL_IOS || TestIds.INTERSTITIAL,
+                default: TestIds.INTERSTITIAL,
             });
 
         if (InterstitialAd) {
