@@ -1,0 +1,183 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Location from 'expo-location';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+export type UserLocation = {
+    state_id: string | null;
+    municipality_id: string | null;
+    state_name?: string;
+    municipality_name?: string;
+    isManual?: boolean;
+    coordinates?: { latitude: number; longitude: number };
+};
+
+type LocationContextType = {
+    location: UserLocation;
+    setLocation: (loc: UserLocation) => void;
+    loading: boolean;
+    detectLocation: () => Promise<void>;
+};
+
+const LocationContext = createContext<LocationContextType | undefined>(undefined);
+
+// Venezuelan state boundaries (approximate center coordinates)
+const STATE_COORDINATES: Record<string, { lat: number; lng: number; name: string }> = {
+    'Distrito Capital': { lat: 10.4806, lng: -66.9036, name: 'Distrito Capital' },
+    'Miranda': { lat: 10.3, lng: -66.6, name: 'Miranda' },
+    'Zulia': { lat: 10.15, lng: -72.25, name: 'Zulia' },
+    'Carabobo': { lat: 10.18, lng: -68.0, name: 'Carabobo' },
+    'Lara': { lat: 10.07, lng: -69.33, name: 'Lara' },
+    'Aragua': { lat: 10.24, lng: -67.59, name: 'Aragua' },
+    'Anzoátegui': { lat: 9.05, lng: -64.7, name: 'Anzoátegui' },
+    'Táchira': { lat: 7.92, lng: -72.25, name: 'Táchira' },
+    'Mérida': { lat: 8.59, lng: -71.15, name: 'Mérida' },
+    'Bolívar': { lat: 6.0, lng: -63.5, name: 'Bolívar' },
+};
+
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function findNearestState(latitude: number, longitude: number): string | null {
+    let nearestState: string | null = null;
+    let minDistance = Infinity;
+
+    for (const [state, coords] of Object.entries(STATE_COORDINATES)) {
+        const distance = calculateDistance(latitude, longitude, coords.lat, coords.lng);
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestState = state;
+        }
+    }
+
+    return nearestState;
+}
+
+export function LocationProvider({ children }: { children: React.ReactNode }) {
+    const [location, setLocationState] = useState<UserLocation>({
+        state_id: null,
+        municipality_id: null,
+    });
+    const [loading, setLoading] = useState(true);
+
+    // Detect location using GPS
+    const detectLocation = async () => {
+        try {
+            // Request permissions
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                console.log('Location permission denied');
+                return;
+            }
+
+            // Get current position
+            const position = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
+
+            const { latitude, longitude } = position.coords;
+
+            // Find nearest state
+            const nearestStateName = findNearestState(latitude, longitude);
+            if (!nearestStateName) {
+                console.log('Could not determine state from coordinates');
+                return;
+            }
+
+            // Fetch state from database
+            const { data: stateData, error: stateError } = await supabase
+                .from('states')
+                .select('id, name')
+                .eq('name', nearestStateName)
+                .single();
+
+            if (stateError || !stateData) {
+                console.warn('State not found in database:', nearestStateName);
+                return;
+            }
+
+            // Fetch first municipality for this state (default)
+            const { data: municipalityData } = await supabase
+                .from('municipalities')
+                .select('id, name')
+                .eq('state_id', stateData.id)
+                .limit(1)
+                .single();
+
+            const newLocation: UserLocation = {
+                state_id: stateData.id,
+                municipality_id: municipalityData?.id || null,
+                state_name: stateData.name,
+                municipality_name: municipalityData?.name,
+                isManual: false,
+                coordinates: { latitude, longitude },
+            };
+
+            await setLocation(newLocation);
+            console.log('Location detected:', newLocation);
+        } catch (error) {
+            console.error('Error detecting location:', error);
+        }
+    };
+
+    // Load from persistence on mount
+    useEffect(() => {
+        async function loadLocation() {
+            try {
+                const stored = await AsyncStorage.getItem('user_location');
+                if (stored) {
+                    setLocationState(JSON.parse(stored));
+                } else {
+                    // Auto-detect location if no stored location
+                    await detectLocation();
+                }
+            } catch (e) {
+                console.error('Failed to load location', e);
+            } finally {
+                setLoading(false);
+            }
+        }
+        loadLocation();
+    }, []);
+
+    const setLocation = async (loc: UserLocation) => {
+        setLocationState(loc);
+        try {
+            await AsyncStorage.setItem('user_location', JSON.stringify(loc));
+
+            // Update profile if user is logged in
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                await supabase.from('profiles').update({
+                    home_state_id: loc.state_id,
+                    home_municipality_id: loc.municipality_id,
+                }).eq('id', user.id);
+            }
+        } catch (e) {
+            console.error('Failed to save location', e);
+        }
+    };
+
+    return (
+        <LocationContext.Provider value={{ location, setLocation, loading, detectLocation }}>
+            {children}
+        </LocationContext.Provider>
+    );
+}
+
+export function useLocation() {
+    const context = useContext(LocationContext);
+    if (context === undefined) {
+        throw new Error('useLocation must be used within a LocationProvider');
+    }
+    return context;
+}

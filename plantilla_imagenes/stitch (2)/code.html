@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SincroVzla - Update Price</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Config -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec5b",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102216",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar hiding for clean UI */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#102216] dark:text-gray-100 min-h-screen flex flex-col overflow-x-hidden antialiased selection:bg-primary selection:text-[#102216]">
+<!-- Header -->
+<header class="sticky top-0 z-20 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-primary/10 px-4 py-3 flex items-center justify-between">
+<button class="flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-primary/10 transition-colors text-[#102216] dark:text-white group">
+<span class="material-symbols-outlined group-active:-translate-x-1 transition-transform">arrow_back</span>
+</button>
+<h2 class="text-lg font-bold leading-tight tracking-tight flex-1 text-center pr-8">Update Price</h2>
+</header>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col px-4 pt-4 pb-32 gap-6 max-w-md mx-auto w-full">
+<!-- Exchange Rate Context Banner -->
+<div class="bg-primary/10 dark:bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between shadow-sm">
+<div class="flex flex-col">
+<span class="text-xs font-semibold text-primary/80 uppercase tracking-wider">Current Rate (BCV)</span>
+<span class="text-xl font-bold text-[#102216] dark:text-white">36.50 <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Bs/USD</span></span>
+</div>
+<div class="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary dark:text-primary">
+<span class="material-symbols-outlined">currency_exchange</span>
+</div>
+</div>
+<!-- Store Selector -->
+<div class="space-y-2">
+<label class="text-sm font-medium text-gray-600 dark:text-gray-300 ml-1">Store Location</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<select class="w-full pl-10 pr-10 py-3.5 bg-white dark:bg-[#1a2e22] border border-gray-200 dark:border-primary/20 rounded-xl text-base text-[#102216] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all appearance-none cursor-pointer">
+<option disabled="" value="">Select Supermarket...</option>
+<option selected="" value="1">Excelsior Gama - Santa Eduvigis</option>
+<option value="2">Central Madeirense - La Boyera</option>
+<option value="3">Plazas - Los Naranjos</option>
+</select>
+<div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Product Search -->
+<div class="space-y-2">
+<label class="text-sm font-medium text-gray-600 dark:text-gray-300 ml-1">Product</label>
+<div class="relative flex items-center">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full pl-10 pr-12 py-3.5 bg-white dark:bg-[#1a2e22] border border-gray-200 dark:border-primary/20 rounded-xl text-base text-[#102216] dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" placeholder="Search name or SKU..." type="text" value="Harina PAN"/>
+<button class="absolute inset-y-0 right-0 pr-3 pl-2 flex items-center text-gray-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">barcode_scanner</span>
+</button>
+</div>
+</div>
+<!-- Selected Product Card -->
+<div class="bg-white dark:bg-[#1a2e22] border border-gray-100 dark:border-primary/10 rounded-xl p-3 flex gap-4 shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-100 group-hover:opacity-100 transition-opacity">
+<button class="text-gray-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="w-20 h-20 shrink-0 rounded-lg bg-gray-50 dark:bg-black/20 flex items-center justify-center overflow-hidden border border-gray-100 dark:border-white/5">
+<!-- Using a generic food related image placeholder -->
+<img alt="Packet of white corn flour" class="w-full h-full object-cover" data-alt="Packet of white corn flour" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeUwpkWparsSZW0zioDmCzrWOuhh8k-cI3Wqp_UfzHF6_9N403P6tyhbVty5k9LZZXl0AIpYrUMv48uL_J_XpbGHFMWVwxWRl2dpcr4MKcyILtz0dDrohEFfBm1JxNvF-YQibdnG4nAPVe5E1350KGSo_XkXAyCt0KEHXO_k2m2umdienmrLLBVh0GsGDMsyh_bmpny10PkOdlmxVptwNnyZFE3Pdu0aezH9R33yJDdlZL6cqdOLA-XpREpzrKG57RNYLTDMW-h_M"/>
+</div>
+<div class="flex flex-col justify-center flex-1 min-w-0">
+<h3 class="font-bold text-[#102216] dark:text-white truncate">Harina de Maíz Blanco 1kg</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">SKU: 890123</p>
+<div class="mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-green-700 dark:text-primary w-fit">
+                    Verified Product
+                </div>
+</div>
+</div>
+<!-- Price Input Section -->
+<div class="mt-2 bg-white dark:bg-[#1a2e22] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-primary/10">
+<div class="flex flex-col gap-5">
+<!-- USD Input -->
+<div class="space-y-2">
+<label class="text-sm font-semibold text-[#102216] dark:text-white ml-1">New Price (USD)</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="text-gray-400 text-2xl font-bold">$</span>
+</div>
+<input autofocus="" class="w-full pl-10 pr-4 py-4 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-700 rounded-xl text-3xl font-bold text-[#102216] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all placeholder:text-gray-300" placeholder="0.00" step="0.01" type="number"/>
+</div>
+</div>
+<!-- Divider with visual calculation -->
+<div class="relative flex items-center justify-center">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-dashed border-gray-300 dark:border-gray-600"></div>
+</div>
+<div class="relative bg-white dark:bg-[#1a2e22] px-2 text-gray-400">
+<span class="material-symbols-outlined text-sm">swap_vert</span>
+</div>
+</div>
+<!-- Bs Calculation -->
+<div class="flex items-center justify-between bg-primary/5 dark:bg-primary/5 rounded-xl p-4 border border-primary/10">
+<span class="text-sm font-medium text-gray-600 dark:text-gray-300">Equivalent in Bs.</span>
+<div class="text-right">
+<span class="block text-2xl font-bold text-gray-800 dark:text-gray-100">0,00</span>
+<span class="text-xs text-primary font-medium">Auto-calculated</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Helper Info -->
+<div class="px-2 flex gap-3 items-start">
+<span class="material-symbols-outlined text-gray-400 text-lg mt-0.5">info</span>
+<p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                 Prices deviating more than 50% from the regional average will be flagged for secondary review.
+             </p>
+</div>
+</main>
+<!-- Sticky Footer Action -->
+<div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-[#102216]/90 backdrop-blur-lg border-t border-gray-100 dark:border-white/5 z-30">
+<div class="max-w-md mx-auto w-full">
+<button class="w-full bg-primary hover:bg-[#0fd650] active:scale-[0.98] transition-all text-[#102216] font-bold text-lg py-4 rounded-xl shadow-[0_4px_14px_rgba(19,236,91,0.3)] flex items-center justify-center gap-2 group">
+<span>Update Price</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">check</span>
+</button>
+</div>
+</div>
+</body></html>
