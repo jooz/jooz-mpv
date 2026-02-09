@@ -5,7 +5,7 @@
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "sincroVzla",
+    "scheme": "sincrovzla",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,6 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.sincroVzla.jooz",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "SincroVzla necesita tu ubicación para mostrarte precios cercanos a ti.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "SincroVzla necesita tu ubicación para mostrarte precios cercanos a ti.",
@@ -41,6 +42,13 @@
     },
     "plugins": [
       "expo-router",
+      "expo-dev-client",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.570425447392-l7k4mal4gqnf8g39mnv6u723i1rc1k9e"
+        }
+      ],
       [
         "react-native-google-mobile-ads",
         {
