@@ -4,7 +4,6 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import '../../global.css';
@@ -13,34 +12,11 @@ import { LocationProvider } from '../context/LocationContext';
 import { supabase } from '../lib/supabase';
 
 import { useColorScheme } from '@/components/useColorScheme';
-import Constants from 'expo-constants';
+import { configureGoogleSignin } from '../lib/googleAuth';
+// (Local configuration removed)
 
-// Configure Google Sign-In safely
-function configureGoogleSignin() {
-  try {
-    // Check environment carefully
-    const isWeb = Platform.OS === 'web';
-    const isExpoGo = Constants.appOwnership === 'expo' || Constants.expoVersion === null || !Constants.appOwnership;
 
-    // GoogleSignin only works in development builds (native) or production (native)
-    // It DOES NOT work in Expo Go or Web.
-    if (!isWeb && Constants.appOwnership !== 'expo') {
-      // One last check: verify it's not actually running in Expo Go environment strings
-      const isActuallyExpoGo = Constants.expoVersion && !Constants.appOwnership;
-      if (!isActuallyExpoGo) {
-        const { GoogleSignin } = require('@react-native-google-signin/google-signin');
-        GoogleSignin.configure({
-          webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-        });
-        console.log('[Google Sign-In] Configurado correctamente');
-        return;
-      }
-    }
-    console.log('[Google Sign-In] Corriendo en modo limitado (Expo Go o Web)');
-  } catch (e) {
-    console.log('[Google Sign-In] No disponible en este entorno (esperado en Expo Go/Web)');
-  }
-}
+// Prevent the splash screen from auto-hiding before asset loading is complete.
 
 export {
   // Catch any errors thrown by the Layout component.

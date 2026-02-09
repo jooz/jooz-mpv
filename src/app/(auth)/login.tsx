@@ -1,47 +1,19 @@
 import { FontAwesome, MaterialIcons } from '@expo/vector-icons';
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getGoogleSignin } from '../../lib/googleAuth';
 import { supabase } from '../../lib/supabase';
 
-// Safely get GoogleSignin module
-const getGoogleSignin = () => {
-    try {
-        const isWeb = Platform.OS === 'web';
-        // En un build nativo (APK), appOwnership es null. 
-        // Solo debemos evitar cargar el módulo en Expo Go.
-        const isExpoGo = Constants.appOwnership === 'expo';
 
-        if (!isWeb && !isExpoGo) {
-            return require('@react-native-google-signin/google-signin');
-        }
-    } catch (e) {
-        console.log('[Google Auth] Módulo nativo no encontrado');
-    }
-    return null;
-};
 
 export default function Login() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
 
-    React.useEffect(() => {
-        const GoogleModule = getGoogleSignin();
-        if (GoogleModule) {
-            const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-            if (webClientId) {
-                GoogleModule.GoogleSignin.configure({
-                    webClientId: webClientId,
-                    offlineAccess: true,
-                });
-            } else {
-                console.warn('[Google Auth] EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing. Google Sign-In will not work.');
-            }
-        }
-    }, []);
+
 
     async function signInWithGoogle() {
         const GoogleModule = getGoogleSignin();

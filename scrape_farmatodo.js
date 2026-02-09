@@ -91,20 +91,34 @@ async function autoScroll(page) {
 }
 
 /**
- * Parsea el precio venezolano "Bs. 1.200,50" a Float y lo divide entre la tasa.
+ * Parsea el precio venezolano de Farmatodo.
+ * Formato: "Bs.727.50" o "Bs.1.150.60"
+ * El ÚLTIMO punto es el decimal, los anteriores son separadores de miles.
  */
 function calculateUsdPrice(priceString, exchangeRate) {
     if (!priceString) return 0;
 
-    // 1. Limpieza: Dejar solo números y coma decimal
-    // "Bs. 1.573,95" -> "1573,95" (quitamos el punto de miles)
-    let clean = priceString.replace(/[^0-9,]/g, '');
+    // 1. Limpiar: Quitar "Bs" y espacios, dejar solo números y puntos
+    // "Bs.727.50" -> "727.50"
+    // " Bs.1.150.60 " -> "1.150.60"
+    let clean = priceString.replace(/[^0-9.]/g, '');
 
-    // 2. Convertir coma decimal a punto
-    // "1573,95" -> "1573.95"
-    let validFloatStr = clean.replace(',', '.');
+    // 2. Identificar el último punto como decimal
+    // Si hay múltiples puntos, los primeros son separadores de miles
+    const lastDotIndex = clean.lastIndexOf('.');
 
-    let priceBs = parseFloat(validFloatStr);
+    let priceBs;
+    if (lastDotIndex === -1) {
+        // No hay punto, es un número entero
+        priceBs = parseFloat(clean);
+    } else {
+        // Separar parte entera y decimal
+        const integerPart = clean.substring(0, lastDotIndex).replace(/\./g, ''); // Quitar puntos de miles
+        const decimalPart = clean.substring(lastDotIndex + 1);
+
+        // Combinar con punto decimal estándar
+        priceBs = parseFloat(`${integerPart}.${decimalPart}`);
+    }
 
     if (isNaN(priceBs)) return 0;
 
@@ -114,9 +128,53 @@ function calculateUsdPrice(priceString, exchangeRate) {
     return priceUsd.toFixed(2); // Retorna string con 2 decimales
 }
 
+/**
+ * Determina la categoría del producto basado en su nombre y término de búsqueda
+ */
+function determineCategory(productName, searchTerm) {
+    const name = productName.toLowerCase();
+    const search = searchTerm.toLowerCase();
+
+    // Keywords para Alimentos
+    const alimentosKeywords = [
+        'harina', 'pan', 'arroz', 'pasta', 'aceite', 'azucar', 'sal',
+        'leche', 'cafe', 'chocolate', 'galleta', 'cereal', 'avena',
+        'mantequilla', 'margarina', 'mayonesa', 'salsa', 'condimento',
+        'sopa', 'atun', 'sardina', 'conserva', 'bebida', 'refresco',
+        'jugo', 'agua', 'te', 'infusion', 'snack', 'dulce', 'caramelo',
+        'chicle', 'golosina'
+    ];
+
+    // Keywords para Farmacia
+    const farmaciaKeywords = [
+        'acetaminofen', 'paracetamol', 'ibuprofeno', 'aspirina',
+        'medicamento', 'tableta', 'capsula', 'jarabe', 'suspension',
+        'crema', 'pomada', 'gel', 'unguento', 'vitamina', 'suplemento',
+        'antibiotico', 'analgesico', 'antialergico', 'antigripal',
+        'gasa', 'venda', 'alcohol', 'algodon', 'curitas', 'termometro',
+        'jeringa', 'diclofenac', 'loratadina', 'omeprazol'
+    ];
+
+    // Verificar si el nombre o término de búsqueda contiene keywords
+    const isAlimento = alimentosKeywords.some(keyword =>
+        name.includes(keyword) || search.includes(keyword)
+    );
+
+    const isFarmacia = farmaciaKeywords.some(keyword =>
+        name.includes(keyword) || search.includes(keyword)
+    );
+
+    // Priorizar Farmacia sobre Alimentos si ambos coinciden
+    if (isFarmacia) return 'Farmacia';
+    if (isAlimento) return 'Alimentos';
+
+    // Por defecto, usar el contexto del search term
+    return 'Farmacia'; // Farmatodo es principalmente farmacia
+}
+
 // --- SCRAPER PRINCIPAL ---
 
-async function scrapeFarmatodo(searchTerm) {
+async function scrapeFarmatodo(searchTerm, categoryOverride = null) {
     console.log(`🚀 Iniciando scraping específico para: "${searchTerm}"`);
 
     const browser = await puppeteer.launch({
@@ -136,26 +194,28 @@ async function scrapeFarmatodo(searchTerm) {
             .order('date', { ascending: false })
             .limit(1)
             .single();
-        const exchangeRate = rateData ? rateData.rate_bcv : 65.00;
+        const exchangeRate = rateData ? rateData.rate_bcv : 382.63;
         console.log(`💵 Tasa de cambio aplicada: ${exchangeRate} Bs/$`);
 
         // 2. Navegar
         await page.goto('https://www.farmatodo.com.ve/', { waitUntil: 'domcontentloaded', timeout: 60000 });
 
-        // 3. Buscar
-        const searchSelector = '#nav-bar-algolia-search-box';
-        await page.waitForSelector(searchSelector, { timeout: 20000 });
+        // 3. Buscar - Estrategia: navegar directamente a la URL de búsqueda
+        // Farmatodo usa Algolia que actualiza dinámicamente, mejor navegar directamente
+        const searchUrl = `https://www.farmatodo.com.ve/buscar?product=${encodeURIComponent(searchTerm)}&departamento=Todos&filtros=`;
+        console.log(`🔍 Navegando a: ${searchUrl}`);
 
-        // Limpiar y escribir
-        await page.click(searchSelector, { clickCount: 3 });
-        await page.type(searchSelector, searchTerm, { delay: 50 });
-        await page.keyboard.press('Enter');
+        await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+        // Esperar un poco para que se rendericen los resultados
+        await new Promise(r => setTimeout(r, 5000));
 
         // Esperar resultados
         try {
             await page.waitForSelector('div.product-card', { timeout: 15000 });
+            console.log('✅ Tarjetas de productos detectadas');
         } catch (e) {
-            console.log("⚠️ No se detectaron tarjetas inmediatamente, esperando un poco más...");
+            console.log("⚠️ No se detectaron tarjetas de productos");
         }
 
         await autoScroll(page);
@@ -166,9 +226,8 @@ async function scrapeFarmatodo(searchTerm) {
             const cards = Array.from(document.querySelectorAll('div.product-card'));
 
             return cards.map(card => {
-                // A. Imagen: class="product-image__image lozad"
-                // A veces Puppeteer no ve 'lozad' si ya cargó, probamos con y sin ella, pero priorizamos tu selector.
-                const imgEl = card.querySelector('.product-image__image.lozad') || card.querySelector('.product-image__image');
+                // A. Imagen: La clase correcta verificada es "cont-img__image"
+                const imgEl = card.querySelector('.cont-img__image');
 
                 // B. Nombre: class="product-card__title"
                 const titleEl = card.querySelector('.product-card__title');
@@ -177,8 +236,11 @@ async function scrapeFarmatodo(searchTerm) {
                 const priceEl = card.querySelector('.product-card__price-value');
 
                 // Extraemos atributos
+                // NOTA: lozad ya procesó las imágenes cuando Puppeteer llega aquí,
+                // así que data-src ya fue movido a src
                 const src = imgEl ? imgEl.src : null;
-                const alt = imgEl ? imgEl.getAttribute('alt') : null; // Para la validación
+
+                const alt = imgEl ? imgEl.getAttribute('alt') : null;
                 const name = titleEl ? titleEl.innerText.trim() : null;
                 const priceRaw = priceEl ? priceEl.innerText.trim() : null;
 
@@ -186,7 +248,7 @@ async function scrapeFarmatodo(searchTerm) {
                     name: name,
                     price_raw: priceRaw,
                     image_url: src,
-                    image_alt: alt // Importante para tu filtro
+                    image_alt: alt
                 };
             });
         });
@@ -199,14 +261,12 @@ async function scrapeFarmatodo(searchTerm) {
             // Validaciones básicas
             if (!p.name || !p.price_raw) continue;
 
-            // 5. TU VALIDACIÓN: Chequear si el ALT contiene la palabra buscada
-            // Usamos normalización para que "Arroz" coincida con "arroz"
-            const altText = normalizeText(p.image_alt);
+            // 5. VALIDACIÓN: Chequear si el nombre del producto contiene la palabra buscada
+            const nameNormalized = normalizeText(p.name);
             const searchNormalized = normalizeText(searchTerm);
 
-            if (!altText.includes(searchNormalized)) {
-                // Opcional: Descomenta para ver qué se está filtrando
-                // console.log(`⏩ Saltando: ${p.name} (El ALT "${p.image_alt}" no contiene "${searchTerm}")`);
+            if (!nameNormalized.includes(searchNormalized)) {
+                console.log(`⏩ Saltando: "${p.name}" (no coincide con búsqueda "${searchTerm}")`);
                 continue;
             }
 
@@ -227,18 +287,29 @@ async function scrapeFarmatodo(searchTerm) {
             // Si no tenemos imagen en Supabase, la subimos
             const isHosted = finalImgUrl && finalImgUrl.includes('supabase.co');
             if (!isHosted && p.image_url) {
+                console.log(`   📸 Subiendo imagen: ${p.image_url.substring(0, 60)}...`);
                 const uploadedUrl = await uploadImageToSupabase(p.image_url, p.name);
-                if (uploadedUrl) finalImgUrl = uploadedUrl;
+                if (uploadedUrl) {
+                    finalImgUrl = uploadedUrl;
+                    console.log(`   ✅ Imagen subida exitosamente`);
+                } else {
+                    console.log(`   ⚠️ Fallo al subir imagen`);
+                }
+            } else if (!p.image_url) {
+                console.log(`   ⚠️ No se encontró URL de imagen en el scraping`);
             }
 
-            // 8. GUARDAR EN BD (Upsert Producto)
+            // 8. DETERMINAR CATEGORÍA
+            const category = categoryOverride || determineCategory(p.name, searchTerm);
+
+            // 9. GUARDAR EN BD (Upsert Producto)
             const { data: prodData, error: prodErr } = await supabase
                 .from('products')
                 .upsert({
                     name: p.name,
                     brand: 'Genérico', // Farmatodo a veces no muestra la marca en una clase fácil
                     image_url: finalImgUrl,
-                    category: 'Farmacia/Varios'
+                    category: category
                 }, { onConflict: 'name' })
                 .select('id')
                 .single();
@@ -274,4 +345,24 @@ async function scrapeFarmatodo(searchTerm) {
 
 // Ejecución
 const term = process.argv[2] || 'Arroz';
-scrapeFarmatodo(term);
+const category = process.argv[3]; // Opcional: "Alimentos" o "Farmacia"
+
+// Validar categoría si se proporciona
+const validCategories = ['Alimentos', 'Farmacia'];
+if (category && !validCategories.includes(category)) {
+    console.error(`❌ Categoría inválida: "${category}"`);
+    console.error(`   Categorías válidas: ${validCategories.join(', ')}`);
+    console.error(`\n📝 Uso correcto:`);
+    console.error(`   node scrape_farmatodo.js "término de búsqueda"`);
+    console.error(`   node scrape_farmatodo.js "término de búsqueda" "Categoría"`);
+    console.error(`\n   Ejemplos:`);
+    console.error(`   node scrape_farmatodo.js "Harina" "Alimentos"`);
+    console.error(`   node scrape_farmatodo.js "Acetaminofen" "Farmacia"`);
+    process.exit(1);
+}
+
+if (category) {
+    console.log(`📂 Categoría especificada: ${category}`);
+}
+
+scrapeFarmatodo(term, category);
