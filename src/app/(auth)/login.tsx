@@ -31,10 +31,15 @@ export default function Login() {
     React.useEffect(() => {
         const GoogleModule = getGoogleSignin();
         if (GoogleModule) {
-            GoogleModule.GoogleSignin.configure({
-                webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-                offlineAccess: true,
-            });
+            const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+            if (webClientId) {
+                GoogleModule.GoogleSignin.configure({
+                    webClientId: webClientId,
+                    offlineAccess: true,
+                });
+            } else {
+                console.warn('[Google Auth] EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID is missing. Google Sign-In will not work.');
+            }
         }
     }, []);
 

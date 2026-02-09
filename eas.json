@@ -17,7 +17,12 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://hrtbykizmvjuxcyfwkqp.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_Aa0ZsbzF0dD8KhdJRMpshQ_4cM3hCYE",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "570425447392-17dma4rbgej9bg359hvek733i1rc1k9e.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {
