@@ -95,21 +95,8 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#13ec5b']} />
         }
       >
-        {/* Search Bar */}
-        <View className="px-6 py-8">
-          <TouchableOpacity
-            className="flex-row items-center bg-white border border-gray-100 rounded-3xl px-6 py-5 shadow-sm shadow-black/5"
-            onPress={() => router.push('/(tabs)/search')}
-          >
-            <MaterialIcons name="search" size={28} color="#13ec5b" />
-            <Text className="flex-1 ml-4 text-gray-400 text-lg font-medium">
-              Busca productos por nombre...
-            </Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Categories Grid */}
-        <View className="px-6 pb-8">
+        <View className="px-6 pb-8 mt-4">
           <Text className="text-2xl font-black text-gray-900 tracking-tighter mb-6">Categorías Populares</Text>
 
           <View className="flex-row flex-wrap -mx-2">

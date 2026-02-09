@@ -80,10 +80,13 @@ export default function ProfileScreen() {
                         <View className="flex-row items-center">
                             <View className="bg-primary px-3 py-1 rounded-full mr-2">
                                 <Text className="text-[#102216] text-[10px] font-black uppercase">
-                                    {profile?.role || 'User'}
+                                    {profile?.points >= 15001 ? 'Leyenda' :
+                                        profile?.points >= 5001 ? 'Centinela' :
+                                            profile?.points >= 2001 ? 'Cazador' :
+                                                profile?.points >= 501 ? 'Explorador' : 'Novato'}
                                 </Text>
                             </View>
-                            <Text className="text-gray-400 text-xs font-medium">{user?.email}</Text>
+                            <Text className="text-gray-400 text-xs font-medium">{profile?.points || 0} pts • {user?.email}</Text>
                         </View>
                     </View>
                 </View>

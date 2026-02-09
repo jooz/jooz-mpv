@@ -85,29 +85,58 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            // Get current position
-            const position = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            });
+            // Get current position with a timeout and fallback
+            let position = null;
+            try {
+                // Try last known position first (very fast)
+                position = await Location.getLastKnownPositionAsync({});
+
+                // If no last known or it's old, get fresh one
+                if (!position) {
+                    position = await Location.getCurrentPositionAsync({
+                        accuracy: Location.Accuracy.Balanced,
+                    });
+                }
+            } catch (posError) {
+                console.error('Error getting position:', posError);
+                return;
+            }
+
+            if (!position) {
+                console.log('Could not obtain any position');
+                return;
+            }
 
             const { latitude, longitude } = position.coords;
 
-            // Use Reverse Geocoding for high accuracy
-            const [address] = await Location.reverseGeocodeAsync({
-                latitude,
-                longitude,
-            });
+            // Use Reverse Geocoding with error handling
+            let address = null;
+            try {
+                const results = await Location.reverseGeocodeAsync({
+                    latitude,
+                    longitude,
+                });
+                if (results && results.length > 0) {
+                    address = results[0];
+                }
+            } catch (geoError) {
+                console.error('Reverse Geocode failed:', geoError);
+            }
 
             let stateNameDetected = address?.region || null;
             let municipalityDetected = address?.city || address?.subregion || address?.district || null;
 
+            // Log detected info for debugging
+            console.log('Address detected:', { state: stateNameDetected, city: municipalityDetected });
+
             // Fallback to nearest state if geocoding fails to give a region
             if (!stateNameDetected) {
+                console.log('Reverse geocoding did not return a region, finding nearest state by coordinates...');
                 stateNameDetected = findNearestState(latitude, longitude);
             }
 
             if (!stateNameDetected) {
-                console.log('Could not determine state');
+                console.warn('Could not determine state even with nearest state fallback');
                 return;
             }
 
@@ -215,8 +244,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
             await AsyncStorage.setItem('user_location', JSON.stringify(loc));
 
             // Update profile if user is logged in
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
+            const { data, error: userError } = await supabase.auth.getUser();
+            const user = data?.user;
+
+            if (user && !userError) {
                 await supabase.from('profiles').update({
                     home_state_id: loc.state_id,
                     home_municipality_id: loc.municipality_id,

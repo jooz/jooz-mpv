@@ -1,7 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AdBanner from '../../components/AdBanner';
 import { useExchangeRates } from '../../context/ExchangeRateContext';
@@ -25,9 +26,16 @@ export default function SearchScreen() {
     const { location } = useLocation();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<string | null>((params.category as string) || null);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
+
+    // Sync category from params when navigating from Home
+    useEffect(() => {
+        if (params.category) {
+            setSelectedCategory(params.category as string);
+        }
+    }, [params.category]);
 
     useEffect(() => {
         fetchProducts();
@@ -99,7 +107,9 @@ export default function SearchScreen() {
                         <Image
                             source={{ uri: item.image_url }}
                             className="w-full h-full"
-                            resizeMode="contain"
+                            contentFit="contain"
+                            transition={400}
+                            placeholder="|rF?hV%2WCj[ayj[a|j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayay"
                         />
                     ) : (
                         <MaterialIcons name="inventory" size={32} color="#cbd5e1" />

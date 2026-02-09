@@ -1,7 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useExchangeRates } from '../../context/ExchangeRateContext';
 import { useLocation } from '../../context/LocationContext';
@@ -17,6 +18,8 @@ export default function ProductDetailScreen() {
     const [product, setProduct] = useState<any>(null);
     const [prices, setPrices] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [validating, setValidating] = useState<string | null>(null);
+    const [validatedPrices, setValidatedPrices] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         if (id) {
@@ -75,10 +78,73 @@ export default function ProductDetailScreen() {
             });
 
             setPrices(sorted);
+
+            // Fetch user's validations for these prices
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+                const { data: validations } = await supabase
+                    .from('price_validations')
+                    .select('price_id')
+                    .eq('user_id', userData.user.id)
+                    .in('price_id', priceData?.map(p => p.id) || []);
+
+                if (validations) {
+                    setValidatedPrices(new Set(validations.map(v => v.price_id)));
+                }
+            }
         } catch (e) {
             console.error('Error fetching product detail:', e);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleValidation(priceId: string, isCorrect: boolean) {
+        setValidating(priceId);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push('/login');
+                return;
+            }
+
+            // Record validation
+            const { error: vError } = await supabase
+                .from('price_validations')
+                .insert({
+                    price_id: priceId,
+                    user_id: user.id,
+                    is_correct: isCorrect
+                });
+
+            if (vError) throw vError;
+
+            // Reward points: +5 for SÍ, +20 for NO (because NO requires updating)
+            const pointsToAdd = isCorrect ? 5 : 20;
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('points')
+                .eq('id', user.id)
+                .single();
+
+            await supabase
+                .from('profiles')
+                .update({ points: (profile?.points || 0) + pointsToAdd })
+                .eq('id', user.id);
+
+            setValidatedPrices(prev => new Set([...prev, priceId]));
+
+            if (!isCorrect) {
+                // If price is wrong, navigate to report screen
+                router.push({
+                    pathname: '/(tabs)/admin',
+                    params: { productId: product.id, priceId: priceId }
+                });
+            }
+        } catch (e) {
+            console.error('Error validating price:', e);
+        } finally {
+            setValidating(null);
         }
     }
 
@@ -135,7 +201,9 @@ export default function ProductDetailScreen() {
                         <Image
                             source={{ uri: product.image_url }}
                             className="w-64 h-64"
-                            resizeMode="contain"
+                            contentFit="contain"
+                            transition={500}
+                            placeholder="|rF?hV%2WCj[ayj[a|j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayay"
                         />
                     ) : (
                         <View className="w-64 h-64 bg-gray-50 rounded-full items-center justify-center">
@@ -178,10 +246,6 @@ export default function ProductDetailScreen() {
                     <View className="mt-8 mb-12">
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-xl font-black text-gray-900">Precios por Tienda</Text>
-                            <View className="bg-white px-4 py-2 rounded-full border border-gray-100 flex-row items-center">
-                                <MaterialIcons name="filter-list" size={16} color="#64748b" />
-                                <Text className="text-gray-500 text-xs font-bold ml-2">ORDENAR</Text>
-                            </View>
                         </View>
 
                         {prices.length === 0 ? (
@@ -194,32 +258,59 @@ export default function ProductDetailScreen() {
                             prices.map((price, index) => {
                                 const isLocal = price.stores?.municipality_id === location.municipality_id;
                                 return (
-                                    <View
-                                        key={price.id}
-                                        className={`bg-white rounded-3xl p-5 mb-4 border ${isLocal ? 'border-primary/30 bg-primary/5' : 'border-gray-100 shadow-sm'} flex-row items-center`}
-                                    >
-                                        <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isLocal ? 'bg-primary/20' : 'bg-gray-50'}`}>
-                                            <MaterialIcons name="storefront" size={24} color={isLocal ? '#102216' : '#94a3b8'} />
+                                    <React.Fragment key={price.id}>
+                                        <View
+                                            key={price.id}
+                                            className={`bg-white rounded-3xl p-5 mb-4 border ${isLocal ? 'border-primary/30 bg-primary/5' : 'border-gray-100 shadow-sm'} flex-row items-center`}
+                                        >
+                                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 ${isLocal ? 'bg-primary/20' : 'bg-gray-50'}`}>
+                                                <MaterialIcons name="storefront" size={24} color={isLocal ? '#102216' : '#94a3b8'} />
+                                            </View>
+
+                                            <View className="flex-1">
+                                                <Text className="text-gray-900 font-black text-base">{price.stores?.name}</Text>
+                                                <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
+                                                    {price.stores?.location || 'Dirección no disponible'}
+                                                </Text>
+                                                {isLocal && (
+                                                    <View className="flex-row items-center mt-1">
+                                                        <View className="w-2 h-2 rounded-full bg-primary mr-1" />
+                                                        <Text className="text-primary text-[10px] font-black uppercase">Cerca de ti</Text>
+                                                    </View>
+                                                )}
+                                            </View>
+
+                                            <View className="items-end">
+                                                <Text className="text-[#102216] text-xl font-black">${price.price_usd.toFixed(2)}</Text>
+                                                <Text className="text-gray-400 text-[10px] font-bold">ACTUALIZADO HOY</Text>
+                                            </View>
                                         </View>
 
-                                        <View className="flex-1">
-                                            <Text className="text-gray-900 font-black text-base">{price.stores?.name}</Text>
-                                            <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
-                                                {price.stores?.location || 'Dirección no disponible'}
-                                            </Text>
-                                            {isLocal && (
-                                                <View className="flex-row items-center mt-1">
-                                                    <View className="w-2 h-2 rounded-full bg-primary mr-1" />
-                                                    <Text className="text-primary text-[10px] font-black uppercase">Cerca de ti</Text>
+                                        {/* Validation Section */}
+                                        {!validatedPrices.has(price.id) && (
+                                            <View className="bg-white/50 rounded-3xl p-4 mb-8 border border-dashed border-gray-200 flex-row items-center justify-between">
+                                                <Text className="text-gray-500 font-bold text-xs uppercase tracking-tighter">¿Sigue este precio igual?</Text>
+                                                <View className="flex-row space-x-3">
+                                                    <TouchableOpacity
+                                                        className="bg-primary/20 flex-row items-center px-4 py-2 rounded-xl"
+                                                        onPress={() => handleValidation(price.id, true)}
+                                                        disabled={!!validating}
+                                                    >
+                                                        <MaterialIcons name="check" size={16} color="#102216" />
+                                                        <Text className="text-[#102216] font-black ml-1 text-xs">SÍ</Text>
+                                                    </TouchableOpacity>
+                                                    <TouchableOpacity
+                                                        className="bg-rose-50 flex-row items-center px-4 py-2 rounded-xl"
+                                                        onPress={() => handleValidation(price.id, false)}
+                                                        disabled={!!validating}
+                                                    >
+                                                        <MaterialIcons name="close" size={16} color="#e11d48" />
+                                                        <Text className="text-rose-600 font-black ml-1 text-xs">NO</Text>
+                                                    </TouchableOpacity>
                                                 </View>
-                                            )}
-                                        </View>
-
-                                        <View className="items-end">
-                                            <Text className="text-[#102216] text-xl font-black">${price.price_usd.toFixed(2)}</Text>
-                                            <Text className="text-gray-400 text-[10px] font-bold">ACTUALIZADO HOY</Text>
-                                        </View>
-                                    </View>
+                                            </View>
+                                        )}
+                                    </React.Fragment>
                                 );
                             })
                         )}
@@ -243,9 +334,6 @@ export default function ProductDetailScreen() {
                     }}
                 >
                     <Text className="text-primary font-black text-lg">REPORTAR PRECIO</Text>
-                </TouchableOpacity>
-                <TouchableOpacity className="bg-gray-100 p-5 rounded-2xl items-center justify-center">
-                    <MaterialIcons name="share" size={24} color="#64748b" />
                 </TouchableOpacity>
             </View>
         </View>
