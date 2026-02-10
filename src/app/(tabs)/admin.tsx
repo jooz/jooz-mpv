@@ -37,7 +37,12 @@ export default function AdminScreen() {
     // Modal states
     const [productModalVisible, setProductModalVisible] = useState(false);
     const [storeModalVisible, setStoreModalVisible] = useState(false);
+    const [addStoreModalVisible, setAddStoreModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // New Store Form states
+    const [newStoreName, setNewStoreName] = useState('');
+    const [newStoreLocation, setNewStoreLocation] = useState('');
 
     useEffect(() => {
         fetchInitialData();
@@ -104,6 +109,52 @@ export default function AdminScreen() {
             Alert.alert('¡Éxito!', 'Precio actualizado correctamente.');
             setPrice('');
             // Optional: reset selections?
+        } catch (e: any) {
+            Alert.alert('Error', e.message);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleCreateStore = async () => {
+        if (!newStoreName || !location.municipality_id) {
+            Alert.alert('Error', 'El nombre de la tienda es obligatorio.');
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            const { data: newStore, error } = await supabase
+                .from('stores')
+                .insert([
+                    {
+                        name: newStoreName,
+                        location: newStoreLocation,
+                        municipality_id: location.municipality_id
+                    }
+                ])
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            Alert.alert('¡Éxito!', 'Tienda registrada correctamente.');
+
+            // Refresh stores list
+            const { data: storeData } = await supabase
+                .from('stores')
+                .select('*')
+                .eq('municipality_id', location.municipality_id);
+            if (storeData) setStores(storeData);
+
+            // Select the new store
+            setSelectedStore(newStore);
+
+            // Close modals and reset form
+            setAddStoreModalVisible(false);
+            setStoreModalVisible(false);
+            setNewStoreName('');
+            setNewStoreLocation('');
         } catch (e: any) {
             Alert.alert('Error', e.message);
         } finally {
@@ -289,6 +340,56 @@ export default function AdminScreen() {
                                 )}
                             />
                         )}
+
+                        <TouchableOpacity
+                            className="bg-primary py-4 rounded-2xl flex-row items-center justify-center mt-4 border border-[#102216]/10"
+                            onPress={() => setAddStoreModalVisible(true)}
+                        >
+                            <MaterialIcons name="add-business" size={24} color="#102216" />
+                            <Text className="ml-2 text-[#102216] font-black text-sm uppercase">Registrar Tienda Nueva</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Add Store Modal */}
+            <Modal visible={addStoreModalVisible} animationType="fade" transparent>
+                <View className="flex-1 bg-black/60 justify-center p-6">
+                    <View className="bg-white rounded-[40px] p-8">
+                        <View className="flex-row justify-between items-center mb-8">
+                            <Text className="text-2xl font-black text-gray-900">Nueva Tienda</Text>
+                            <TouchableOpacity onPress={() => setAddStoreModalVisible(false)} className="bg-gray-100 p-2 rounded-full">
+                                <MaterialIcons name="close" size={24} color="black" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">Nombre del Comercio</Text>
+                        <TextInput
+                            className="bg-gray-50 border border-gray-100 p-5 rounded-2xl mb-6 font-bold text-gray-900"
+                            placeholder="Ej. Bodegón El Chamo"
+                            value={newStoreName}
+                            onChangeText={setNewStoreName}
+                        />
+
+                        <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">Referencia / Dirección</Text>
+                        <TextInput
+                            className="bg-gray-50 border border-gray-100 p-5 rounded-2xl mb-8 font-bold text-gray-900"
+                            placeholder="Ej. Av. Principal, frente a la plaza"
+                            value={newStoreLocation}
+                            onChangeText={setNewStoreLocation}
+                        />
+
+                        <TouchableOpacity
+                            className={`py-5 rounded-3xl items-center shadow-lg ${submitting ? 'bg-gray-400' : 'bg-[#102216] shadow-emerald-900/20'}`}
+                            onPress={handleCreateStore}
+                            disabled={submitting}
+                        >
+                            {submitting ? (
+                                <ActivityIndicator color="#13ec5b" />
+                            ) : (
+                                <Text className="text-primary font-black text-lg tracking-tighter">CONFIRMAR REGISTRO</Text>
+                            )}
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
