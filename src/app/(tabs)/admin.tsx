@@ -181,6 +181,13 @@ export default function AdminScreen() {
                     <Text className="text-gray-500 mt-2 text-lg">Reporta precios reales para la comunidad.</Text>
                 </View>
 
+                {loading && (
+                    <View className="flex-row items-center bg-blue-50 p-4 rounded-2xl mb-8 border border-blue-100">
+                        <ActivityIndicator color="#3b82f6" />
+                        <Text className="ml-3 text-blue-600 font-bold">Actualizando base de datos...</Text>
+                    </View>
+                )}
+
                 {/* Info Card */}
                 <View className="bg-[#102216] p-6 rounded-[32px] mb-8 shadow-xl shadow-black/10">
                     <View className="flex-row items-center mb-4">
@@ -259,7 +266,10 @@ export default function AdminScreen() {
 
             {/* Product Modal */}
             <Modal visible={productModalVisible} animationType="slide" transparent>
-                <View className="flex-1 bg-black/50 justify-end">
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    className="flex-1 bg-black/50 justify-end"
+                >
                     <View className="bg-white h-[80%] rounded-t-[48px] p-6">
                         <View className="flex-row justify-between items-center mb-6">
                             <Text className="text-2xl font-black text-gray-900">Buscar Producto</Text>
@@ -298,7 +308,7 @@ export default function AdminScreen() {
                             )}
                         />
                     </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
 
             {/* Store Modal */}
@@ -343,7 +353,10 @@ export default function AdminScreen() {
 
                         <TouchableOpacity
                             className="bg-primary py-4 rounded-2xl flex-row items-center justify-center mt-4 border border-[#102216]/10"
-                            onPress={() => setAddStoreModalVisible(true)}
+                            onPress={() => {
+                                setStoreModalVisible(false);
+                                setTimeout(() => setAddStoreModalVisible(true), 300);
+                            }}
                         >
                             <MaterialIcons name="add-business" size={24} color="#102216" />
                             <Text className="ml-2 text-[#102216] font-black text-sm uppercase">Registrar Tienda Nueva</Text>
@@ -354,7 +367,10 @@ export default function AdminScreen() {
 
             {/* Add Store Modal */}
             <Modal visible={addStoreModalVisible} animationType="fade" transparent>
-                <View className="flex-1 bg-black/60 justify-center p-6">
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    className="flex-1 bg-black/60 justify-center p-6"
+                >
                     <View className="bg-white rounded-[40px] p-8">
                         <View className="flex-row justify-between items-center mb-8">
                             <Text className="text-2xl font-black text-gray-900">Nueva Tienda</Text>
@@ -391,7 +407,7 @@ export default function AdminScreen() {
                             )}
                         </TouchableOpacity>
                     </View>
-                </View>
+                </KeyboardAvoidingView>
             </Modal>
         </KeyboardAvoidingView>
     );
