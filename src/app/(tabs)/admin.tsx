@@ -1,4 +1,5 @@
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -212,8 +213,15 @@ export default function AdminScreen() {
                         onPress={() => setProductModalVisible(true)}
                     >
                         <View className="flex-row items-center flex-1">
-                            <MaterialIcons name="inventory" size={24} color={selectedProduct ? "#102216" : "#cbd5e1"} />
-                            <Text className={`ml-4 text-base font-bold ${selectedProduct ? 'text-gray-900' : 'text-gray-400'}`}>
+                            {selectedProduct && selectedProduct.image_url ? (
+                                <View className="w-10 h-10 bg-gray-50 rounded-lg mr-3 shadow-sm border border-gray-100 overflow-hidden">
+                                     <Image source={{ uri: selectedProduct.image_url }} className="w-full h-full" contentFit="cover" />
+                                </View>
+                            ) : (
+                                <MaterialIcons name="inventory" size={24} color={selectedProduct ? "#102216" : "#cbd5e1"} className={selectedProduct ? "mr-4" : ""} />
+                            )}
+                            
+                            <Text className={`ml-4 text-base font-bold flex-1 ${selectedProduct ? 'text-gray-900' : 'text-gray-400'}`}>
                                 {selectedProduct ? `${selectedProduct.brand} - ${selectedProduct.name}` : 'Toca para buscar producto'}
                             </Text>
                         </View>
@@ -281,6 +289,7 @@ export default function AdminScreen() {
                         <TextInput
                             className="bg-gray-100 p-5 rounded-2xl mb-6 font-bold text-gray-900"
                             placeholder="Ej. Harina Pan..."
+                            placeholderTextColor="#94a3b8"
                             value={searchQuery}
                             onChangeText={setSearchQuery}
                         />
@@ -297,8 +306,17 @@ export default function AdminScreen() {
                                         setSearchQuery('');
                                     }}
                                 >
-                                    <View className="bg-gray-50 p-3 rounded-xl mr-4">
-                                        <MaterialIcons name="inventory" size={24} color="#cbd5e1" />
+                                    <View className="w-12 h-12 bg-gray-50 rounded-xl mr-4 items-center justify-center overflow-hidden border border-gray-100">
+                                        {item.image_url ? (
+                                            <Image
+                                                source={{ uri: item.image_url }}
+                                                className="w-full h-full"
+                                                contentFit="cover"
+                                                transition={200}
+                                            />
+                                        ) : (
+                                            <MaterialIcons name="inventory" size={24} color="#cbd5e1" />
+                                        )}
                                     </View>
                                     <View>
                                         <Text className="text-gray-400 text-[10px] font-bold uppercase">{item.brand}</Text>
@@ -383,6 +401,7 @@ export default function AdminScreen() {
                         <TextInput
                             className="bg-gray-50 border border-gray-100 p-5 rounded-2xl mb-6 font-bold text-gray-900"
                             placeholder="Ej. Bodegón El Chamo"
+                            placeholderTextColor="#94a3b8"
                             value={newStoreName}
                             onChangeText={setNewStoreName}
                         />
@@ -391,6 +410,7 @@ export default function AdminScreen() {
                         <TextInput
                             className="bg-gray-50 border border-gray-100 p-5 rounded-2xl mb-8 font-bold text-gray-900"
                             placeholder="Ej. Av. Principal, frente a la plaza"
+                            placeholderTextColor="#94a3b8"
                             value={newStoreLocation}
                             onChangeText={setNewStoreLocation}
                         />
