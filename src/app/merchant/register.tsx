@@ -4,8 +4,6 @@ import React, { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    KeyboardAvoidingView,
-    Platform,
     ScrollView,
     Text,
     TextInput,
@@ -26,14 +24,17 @@ export default function MerchantRegisterScreen() {
 
     async function handleSubmit() {
         if (!storeName || !rif || !location) {
-            Alert.alert('Error', 'Por favor llena todos los campos');
+            Alert.alert('Faltan datos', 'Por favor completa todos los campos.');
             return;
         }
 
         setLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error('No estás autenticado');
+            if (!user) {
+                router.replace('/login');
+                return;
+            }
 
             const { error } = await supabase
                 .from('merchant_requests')
@@ -49,100 +50,105 @@ export default function MerchantRegisterScreen() {
 
             Alert.alert(
                 'Solicitud Enviada',
-                'Tu solicitud para ser perfil comercial ha sido enviada. Revisaremos tus datos y te avisaremos pronto.',
+                'Tu solicitud está siendo procesada. Te notificaremos cuando seas verificado.',
                 [{ text: 'OK', onPress: () => router.back() }]
             );
         } catch (error: any) {
-            Alert.alert('Error', error.message || 'No se pudo enviar la solicitud');
+            Alert.alert('Error', error.message);
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <View className="flex-1 bg-white">
+        <View className="flex-1 bg-[#f8fafc]">
             <Stack.Screen
                 options={{
-                    headerTitle: 'Perfil Comercial',
+                    headerTitle: 'Registro de Comercio',
                     headerShadowVisible: false,
-                    headerStyle: { backgroundColor: 'white' },
-                    headerTitleStyle: { fontFamily: 'System', fontWeight: '900' },
+                    headerStyle: { backgroundColor: '#102216' },
+                    headerTintColor: 'white',
                 }}
             />
 
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            <ScrollView
                 className="flex-1"
+                contentContainerStyle={{ padding: 24, paddingBottom: insets.bottom + 40 }}
             >
-                <ScrollView
-                    className="flex-1 px-6"
-                    contentContainerStyle={{ paddingTop: 20, paddingBottom: insets.bottom + 20 }}
-                >
-                    <View className="mb-8 items-center">
-                        <View className="w-20 h-20 bg-primary/20 rounded-full items-center justify-center mb-4">
-                            <MaterialIcons name="business-center" size={40} color="#102216" />
-                        </View>
-                        <Text className="text-2xl font-black text-gray-900 text-center">Únete como Socio Jooz</Text>
-                        <Text className="text-gray-500 text-center mt-2 font-medium">
-                            Llega a más clientes y mantén tus precios actualizados con el sello de verificación.
-                        </Text>
+                <View className="bg-primary/10 p-6 rounded-[32px] mb-8 items-center">
+                    <MaterialIcons name="verified-user" size={48} color="#102216" />
+                    <Text className="text-[#102216] font-black text-xl mt-4 text-center">Únete como Comercio Verificado</Text>
+                    <Text className="text-gray-600 text-center mt-2">
+                        Gestiona tus propios precios, obtén el sello oficial y destaca ante los usuarios de tu zona.
+                    </Text>
+                </View>
+
+                <View className="bg-white rounded-[40px] p-8 shadow-sm border border-gray-100">
+                    <Text className="text-gray-400 text-[10px] font-black uppercase tracking-widest mb-6">Información del Negocio</Text>
+
+                    <View className="mb-6">
+                        <Text className="text-gray-900 font-bold mb-2 ml-1">Nombre Comercial</Text>
+                        <TextInput
+                            className="bg-gray-50 p-4 rounded-2xl border border-gray-100 font-bold"
+                            placeholder="Ej: Bodegón La Excelencia"
+                            value={storeName}
+                            onChangeText={setStoreName}
+                        />
                     </View>
 
-                    <View className="space-y-6">
-                        <View>
-                            <Text className="text-gray-400 text-xs font-black uppercase tracking-widest mb-2 ml-1">Nombre del Comercio</Text>
-                            <TextInput
-                                className="bg-gray-50 border border-gray-100 p-5 rounded-2xl font-bold text-gray-900"
-                                placeholder="Ej. Bodegón El Rey"
-                                placeholderTextColor="#94a3b8"
-                                value={storeName}
-                                onChangeText={setStoreName}
-                            />
-                        </View>
+                    <View className="mb-6">
+                        <Text className="text-gray-900 font-bold mb-2 ml-1">RIF (V-00000000-0)</Text>
+                        <TextInput
+                            className="bg-gray-50 p-4 rounded-2xl border border-gray-100 font-bold"
+                            placeholder="J-12345678-9"
+                            value={rif}
+                            onChangeText={setRif}
+                        />
+                    </View>
 
-                        <View>
-                            <Text className="text-gray-400 text-xs font-black uppercase tracking-widest mb-2 ml-1">Número de RIF</Text>
-                            <TextInput
-                                className="bg-gray-50 border border-gray-100 p-5 rounded-2xl font-bold text-gray-900"
-                                placeholder="Ej. J-12345678-9"
-                                placeholderTextColor="#94a3b8"
-                                value={rif}
-                                onChangeText={setRif}
-                                autoCapitalize="characters"
-                            />
-                        </View>
-
-                        <View>
-                            <Text className="text-gray-400 text-xs font-black uppercase tracking-widest mb-2 ml-1">Ubicación / Dirección</Text>
-                            <TextInput
-                                className="bg-gray-50 border border-gray-100 p-5 rounded-2xl font-bold text-gray-900"
-                                placeholder="Ej. Av. Principal con Calle 4"
-                                placeholderTextColor="#94a3b8"
-                                value={location}
-                                onChangeText={setLocation}
-                                multiline
-                                numberOfLines={2}
-                            />
-                        </View>
+                    <View className="mb-8">
+                        <Text className="text-gray-900 font-bold mb-2 ml-1">Ubicación / Dirección Corta</Text>
+                        <TextInput
+                            className="bg-gray-50 p-4 rounded-2xl border border-gray-100 font-bold"
+                            placeholder="Ej: Av. Principal, Sector Centro"
+                            value={location}
+                            onChangeText={setLocation}
+                        />
                     </View>
 
                     <TouchableOpacity
-                        className={`mt-10 py-5 rounded-2xl items-center justify-center ${loading ? 'bg-gray-200' : 'bg-primary'}`}
+                        className={`py-5 rounded-[24px] items-center ${loading ? 'bg-gray-200' : 'bg-[#102216]'}`}
                         onPress={handleSubmit}
                         disabled={loading}
                     >
                         {loading ? (
-                            <ActivityIndicator color="#102216" />
+                            <ActivityIndicator color="white" />
                         ) : (
-                            <Text className="text-[#102216] font-black text-lg">ENVIAR SOLICITUD</Text>
+                            <Text className="text-primary font-black text-lg">ENVIAR SOLICITUD</Text>
                         )}
                     </TouchableOpacity>
 
-                    <Text className="text-gray-400 text-[10px] text-center mt-6 uppercase font-bold px-4">
-                        Al enviar, aceptas que revisaremos los datos de tu comercio para otorgar el sello de verificación.
+                    <Text className="text-gray-400 text-[10px] text-center mt-6 font-medium">
+                        Al enviar, aceptas que un administrador valide tus datos legales.
                     </Text>
-                </ScrollView>
-            </KeyboardAvoidingView>
+                </View>
+
+                {/* Benefits */}
+                <View className="mt-8 space-y-4">
+                    <View className="flex-row items-center bg-white p-4 rounded-3xl border border-gray-100">
+                        <View className="bg-emerald-50 p-2 rounded-xl mr-4">
+                            <MaterialIcons name="trending-up" size={20} color="#10b981" />
+                        </View>
+                        <Text className="text-gray-600 font-bold text-xs flex-1">Posicionamiento prioritario en búsquedas</Text>
+                    </View>
+                    <View className="flex-row items-center bg-white p-4 rounded-3xl border border-gray-100">
+                        <View className="bg-blue-50 p-2 rounded-xl mr-4">
+                            <MaterialIcons name="upload-file" size={20} color="#3b82f6" />
+                        </View>
+                        <Text className="text-gray-600 font-bold text-xs flex-1">Carga masiva de inventario vía CSV</Text>
+                    </View>
+                </View>
+            </ScrollView>
         </View>
     );
 }

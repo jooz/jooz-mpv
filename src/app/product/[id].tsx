@@ -62,7 +62,7 @@ export default function ProductDetailScreen() {
             if (prError) throw prError;
 
             // Sort logic: Municipality matches first, then price/verified hybrid
-            // Hybrid Logic: Verified stores get a 5% "ranking bonus"
+            // Hybrid Logic: Verified stores get a 5% \"ranking bonus\"
             const sorted = (priceData || []).sort((a: any, b: any) => {
                 const aInMuni = a.stores?.municipality_id === location.municipality_id;
                 const bInMuni = b.stores?.municipality_id === location.municipality_id;
@@ -71,7 +71,7 @@ export default function ProductDetailScreen() {
                 if (!aInMuni && bInMuni) return 1;
 
                 // Within same group (both local or both not local)
-                // We apply a 5% "virtual discount" for verified stores for sorting
+                // We apply a 5% \"virtual discount\" for verified stores for sorting
                 const aEffectivePrice = a.stores?.is_verified ? a.price_usd * 0.95 : a.price_usd;
                 const bEffectivePrice = b.stores?.is_verified ? b.price_usd * 0.95 : b.price_usd;
 
@@ -204,7 +204,7 @@ export default function ProductDetailScreen() {
                             className="w-64 h-64"
                             contentFit="contain"
                             transition={500}
-                            placeholder="|rF?hV%2WCj[ayj[a|j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayay"
+                            placeholder=\"|rF?hV%2WCj[ayj[a|j[ayfQa{oLj?j[WVj[ayayj[fQoff7azayj[ayj[j[ayofayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayayayj[ayj[ayay\"
                         />
                     ) : (
                         <View className="w-64 h-64 bg-gray-50 rounded-full items-center justify-center">

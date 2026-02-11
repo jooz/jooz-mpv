@@ -192,10 +192,24 @@ export default function MerchantDashboardScreen() {
                         <View className="flex-row items-center justify-between">
                             <View>
                                 <Text className="text-white text-2xl font-black">{selectedStore?.name}</Text>
-                                <Text className="text-gray-400 font-medium">{selectedStore?.location}</Text>
+                                <View className="flex-row items-center">
+                                    <Text className="text-gray-400 font-medium mr-2">{selectedStore?.location}</Text>
+                                    {selectedStore?.subscription_active && (
+                                        <View className="bg-amber-500/20 px-2 py-0.5 rounded-md border border-amber-500/30">
+                                            <Text className="text-amber-500 text-[8px] font-black uppercase text-center">{selectedStore?.subscription_tier}</Text>
+                                        </View>
+                                    )}
+                                </View>
                             </View>
-                            <View className="bg-primary/20 p-3 rounded-2xl">
-                                <MaterialIcons name="verified" size={24} color="#13ec5b" />
+                            <View className="items-end">
+                                <View className="bg-primary/20 p-3 rounded-2xl mb-1">
+                                    <MaterialIcons name="verified" size={24} color="#13ec5b" />
+                                </View>
+                                {selectedStore?.subscription_expires_at && (
+                                    <Text className="text-gray-500 text-[8px] font-bold uppercase">
+                                        Vence: {new Date(selectedStore.subscription_expires_at).toLocaleDateString()}
+                                    </Text>
+                                )}
                             </View>
                         </View>
                     </View>

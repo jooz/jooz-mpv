@@ -41,10 +41,15 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 ## 6. Arquitectura del Sistema
 - **Frontend:** Expo / React Native (Expo Router).
 - **Backend:** Supabase (PostgreSQL).
+- **Automatización:** 
+    - **Edge Function:** `update-exchange-rate-daily` (Consumiendo DolarApi).
+    - **Cron Job:** `update-daily-exchange-rate` (Ejecución diaria 00:05 UTC).
 - **Suscripciones:** Gestión de tier `free` y `premium` con periodos de gracia.
 
 ## 7. Modelo de Datos
 - `profiles`: id, email, role, home_municipality_id, points, level, is_admin.
+- `states`: id, name.
+- `municipalities`: id, state_id, name.
 - `stores`: id, name, location, municipality_id, is_verified, merchant_id, subscription_tier, subscription_active, subscription_expires_at.
 - `products`: id, name, brand, category, image_url.
 - `prices`: product_id, store_id, price_usd, updated_at, updated_by.
@@ -59,7 +64,7 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 - [x] Creación de estructura de tablas regionales.
 - [x] Selector de Ubicación Premium: Implementado con Modal y soporte GPS.
 - [x] Rediseño de Pantalla de Login: Enfoque 100% OAuth con estética moderna.
-- [x] **Fase 1: Gamificación:** Sistema de puntos, niveles y validación "un solo tap".
+- [x] **Fase 1: Gamificación:** Sistema de puntos, niveles y validación \"un solo tap\".
 - [x] **Fase 2: Merchant Phase:** Dashboard, Carga masiva CSV y Sello de Verificación.
 - [x] **Administración:** Panel central para aprobación de comercios y gestión de membresías.
 
@@ -73,7 +78,7 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 
 ### 9.2 Geolocalización Inteligente
 - [x] **Contexto de Ubicación (`LocationContext`):** Detección automática de Estado y Municipio con `expo-location`.
-- [x] **Fallback y Selección Manual:** Estrategia de "Última Ubicación Conocida" para rapidez y selector manual premium para precisión.
+- [x] **Fallback y Selección Manual:** Estrategia de \"Última Ubicación Conocida\" para rapidez y selector manual premium para precisión.
 
 ### 9.3 Inventario y Precios
 - [x] **Catálogo Visual:** Interfaz de Home con categorías coloridas y buscador dedicado.
@@ -91,7 +96,7 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 
 ### 9.6 Alianza con Comercios y B2B (Fase 2)
 - [x] **Registro de Comerciantes:** Flujo para solicitar verificación de tienda con RIF.
-- [x] **Merchant Dashboard:** Gestión de inventario propio y botón de "Vigencia Total" de precios.
+- [x] **Merchant Dashboard:** Gestión de inventario propio y botón de \"Vigencia Total\" de precios.
 - [x] **Batch Update:** Sistema de importación vía CSV para carga masiva de catálogos.
 - [x] **Ordenamiento Híbrido:** Algoritmo que prioriza tiendas locales verificadas manteniendo el enfoque en el ahorro.
 
@@ -108,7 +113,7 @@ Eliminar la necesidad de escribir manualmente mediante el procesamiento de fotos
 Esta función recibirá una imagen en Base64 desde la App (Expo), la enviará a una API de IA (Google Vision o GPT-4o-mini) y devolverá los datos estructurados.
 
 *   **Input:** Imagen + `store_id`.
-*   **Procesamiento:** La IA identifica pares de "Nombre de Producto" y "Precio".
+*   **Procesamiento:** La IA identifica pares de \"Nombre de Producto\" y \"Precio\".
 *   **Matching:** La función busca en tu tabla `products` los nombres más similares.
 *   **Output:** Devuelve una lista para que el usuario confirme antes de guardar.
 
@@ -116,7 +121,7 @@ Esta función recibirá una imagen en Base64 desde la App (Expo), la enviará a 
 
 ```javascript
 // supabase/functions/process-invoice/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from \"https://deno.land/std@0.168.0/http/server.ts\"
 
 serve(async (req) => {
   const { image, store_id, user_id } = await req.json()
@@ -128,7 +133,7 @@ serve(async (req) => {
   // ...
   
   return new Response(JSON.stringify({ detected_prices: visionData }), {
-    headers: { "Content-Type": "application/json" },
+    headers: { \"Content-Type\": \"application/json\" },
   })
 })
 ```
@@ -144,6 +149,6 @@ Para soportar todo lo anterior, tu esquema final debería incluir estas relacion
 | `merchant_requests` | `store_id`, `rif_photo_url`, `status` | Control de ingreso de comercios. |
 
 ### Recomendación de Marketing Local
-Para el lanzamiento en **Punto Fijo**, podrías crear un evento de "Inauguración Digital":
+Para el lanzamiento en **Punto Fijo**, podrías crear un evento de \"Inauguración Digital\":
 *   **Acción:** Los primeros 50 usuarios que lleguen a Nivel 2 (Explorador) participan en un sorteo de una Gift Card de 20 USDT.
-*   **Canal:** Grupos de Telegram de "Ofertas Paraguaná".
+*   **Canal:** Grupos de Telegram de \"Ofertas Paraguaná\".
