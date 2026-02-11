@@ -17,6 +17,7 @@ export default function ProfileScreen() {
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [useBsAsDefault, setUseBsAsDefault] = useState(false);
+    const [stores, setStores] = useState<any[]>([]);
 
     useEffect(() => {
         fetchUserData();
@@ -29,12 +30,20 @@ export default function ProfileScreen() {
             setUser(authUser);
 
             if (authUser) {
-                const { data: profileData } = await supabase
-                    .from('profiles')
-                    .select('*, states(name), municipalities(name)')
-                    .eq('id', authUser.id)
-                    .single();
-                setProfile(profileData);
+                const [profileRes, storesRes] = await Promise.all([
+                    supabase
+                        .from('profiles')
+                        .select('*, states(name), municipalities(name), is_admin')
+                        .eq('id', authUser.id)
+                        .single(),
+                    supabase
+                        .from('stores')
+                        .select('id')
+                        .eq('merchant_id', authUser.id)
+                ]);
+
+                if (profileRes.data) setProfile(profileRes.data);
+                if (storesRes.data) setStores(storesRes.data);
             }
         } catch (e) {
             console.error('Error fetching profile:', e);
@@ -135,22 +144,59 @@ export default function ProfileScreen() {
                         />
                     </View>
 
-                    {/* Premium Setting */}
-                    <TouchableOpacity
-                        className="flex-row items-center justify-between py-4"
-                        onPress={() => Alert.alert('Premium', 'Próximamente: Navegación sin anuncios.')}
-                    >
-                        <View className="flex-row items-center">
-                            <View className="bg-amber-50 p-3 rounded-2xl mr-4">
-                                <MaterialIcons name="workspace-premium" size={24} color="#f59e0b" />
+                    {/* Merchant Section */}
+                    {stores.length > 0 ? (
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between py-4 border-b border-gray-50"
+                            onPress={() => router.push('/merchant/dashboard' as any)}
+                        >
+                            <View className="flex-row items-center">
+                                <View className="bg-emerald-50 p-3 rounded-2xl mr-4">
+                                    <MaterialIcons name="dashboard" size={24} color="#10b981" />
+                                </View>
+                                <View>
+                                    <Text className="text-gray-900 font-bold text-base">Panel de Mi Comercio</Text>
+                                    <Text className="text-gray-400 text-sm">Gestiona tu inventario y precios</Text>
+                                </View>
                             </View>
-                            <View>
-                                <Text className="text-gray-900 font-bold text-base">Eliminar Anuncios</Text>
-                                <Text className="text-gray-400 text-sm">Membresía Premium</Text>
+                            <MaterialIcons name="chevron-right" size={24} color="#cbd5e1" />
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between py-4 border-b border-gray-50"
+                            onPress={() => router.push('/merchant/register' as any)}
+                        >
+                            <View className="flex-row items-center">
+                                <View className="bg-purple-50 p-3 rounded-2xl mr-4">
+                                    <MaterialIcons name="storefront" size={24} color="#a855f7" />
+                                </View>
+                                <View>
+                                    <Text className="text-gray-900 font-bold text-base">Registrar mi Comercio</Text>
+                                    <Text className="text-gray-400 text-sm">Obtén el sello de verificación</Text>
+                                </View>
                             </View>
-                        </View>
-                        <MaterialIcons name="chevron-right" size={24} color="#cbd5e1" />
-                    </TouchableOpacity>
+                            <MaterialIcons name="chevron-right" size={24} color="#cbd5e1" />
+                        </TouchableOpacity>
+                    )}
+
+                    {/* Admin Section */}
+                    {profile?.is_admin && (
+                        <TouchableOpacity
+                            className="flex-row items-center justify-between py-4 border-b border-gray-50"
+                            onPress={() => router.push('/admin/requests' as any)}
+                        >
+                            <View className="flex-row items-center">
+                                <View className="bg-amber-50 p-3 rounded-2xl mr-4">
+                                    <MaterialIcons name="admin-panel-settings" size={24} color="#f59e0b" />
+                                </View>
+                                <View>
+                                    <Text className="text-gray-900 font-bold text-base">Panel de Administración</Text>
+                                    <Text className="text-gray-400 text-sm">Gestionar solicitudes y comercios</Text>
+                                </View>
+                            </View>
+                            <MaterialIcons name="chevron-right" size={24} color="#cbd5e1" />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Support & Legal */}

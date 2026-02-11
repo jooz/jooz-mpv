@@ -51,30 +51,31 @@ export default function ProductDetailScreen() {
                         id,
                         name,
                         location,
-                        municipality_id
+                        municipality_id,
+                        is_verified
                     )
                 `)
                 .eq('product_id', id);
-
-            // Filter by municipality if selected
-            if (location.municipality_id) {
-                // Since prices -> stores is a many-to-one, we need to handle filtering carefully in PostgREST
-                // Better approach: fetch all and filter client side OR use join logic if supported
-                // For MVP, we'll fetch all and filter here to show "Nearby" first
-            }
 
             const { data: priceData, error: prError } = await query.order('price_usd', { ascending: true });
 
             if (prError) throw prError;
 
-            // Sort logic: Municipality matches first, then price
+            // Sort logic: Municipality matches first, then price/verified hybrid
+            // Hybrid Logic: Verified stores get a 5% "ranking bonus"
             const sorted = (priceData || []).sort((a: any, b: any) => {
                 const aInMuni = a.stores?.municipality_id === location.municipality_id;
                 const bInMuni = b.stores?.municipality_id === location.municipality_id;
 
                 if (aInMuni && !bInMuni) return -1;
                 if (!aInMuni && bInMuni) return 1;
-                return a.price_usd - b.price_usd;
+
+                // Within same group (both local or both not local)
+                // We apply a 5% "virtual discount" for verified stores for sorting
+                const aEffectivePrice = a.stores?.is_verified ? a.price_usd * 0.95 : a.price_usd;
+                const bEffectivePrice = b.stores?.is_verified ? b.price_usd * 0.95 : b.price_usd;
+
+                return aEffectivePrice - bEffectivePrice;
             });
 
             setPrices(sorted);
@@ -268,7 +269,12 @@ export default function ProductDetailScreen() {
                                             </View>
 
                                             <View className="flex-1">
-                                                <Text className="text-gray-900 font-black text-base">{price.stores?.name}</Text>
+                                                <View className="flex-row items-center">
+                                                    <Text className="text-gray-900 font-black text-base mr-1">{price.stores?.name}</Text>
+                                                    {price.stores?.is_verified && (
+                                                        <MaterialIcons name="verified" size={16} color="#3b82f6" />
+                                                    )}
+                                                </View>
                                                 <Text className="text-gray-400 text-xs font-medium" numberOfLines={1}>
                                                     {price.stores?.location || 'Dirección no disponible'}
                                                 </Text>

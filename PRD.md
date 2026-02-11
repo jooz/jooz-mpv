@@ -1,8 +1,8 @@
 # Documento de Requerimientos del Producto (PRD): Jooz (SincroVzla)
 
-**Versión:** 1.2  
+**Versión:** 1.3  
 **Estado:** Activo  
-**Fecha:** 7 de febrero de 2026  
+**Fecha:** 10 de febrero de 2026  
 **Stack Tecnológico:** Expo (React Native) + Supabase + Google AdMob
 
 ---
@@ -19,19 +19,19 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 ### 2.2 Objetivos
 - Comparador de precios en tiempo real segmentado por Municipio/Estado.
 - Interfaz ligera para dispositivos de gama media/baja.
-- Monetización vía banners e intersticiales con AdMob.
+- Monetización vía banners, intersticiales y membresías B2B.
 
 ## 3. Público Objetivo
 - **Consumidor (Ahorrador):** Busca optimizar su presupuesto.
-- **Supervisor (Crowdsourcer):** Encargado de verificar y actualizar precios.
-- **Administrador:** Gestión de roles y configuración de la plataforma.
+- **Comerciante (B2B):** Gestiona su inventario y visibilidad en la app.
+- **Administrador:** Gestión de solicitudes comerciales y moderación.
 
 ## 4. Requerimientos Funcionales (FR)
 - **FR1: Gestión de Ubicación Regional** (GPS via `expo-location` o selección manual). [IMPLEMETADO]
 - **FR2: Comparador de Precios y Moneda Dual** (Tasa automatizada vía Edge Functions). [IMPLEMENTADO]
-- **FR3: Gestión de Roles (RBAC)** (Admin, Supervisor, User).
-- **FR4: Monetización (AdMob)** (Banners y anuncios transicionales). [IMPLEMENTADO]
-- **FR5: Autenticación con Google** (Implementado vía `@react-native-google-signin/google-signin`). [IMPLEMENTADO]
+- **FR3: Gamificación y Validación Crowdsourced** (Puntos, niveles y validación rápida). [IMPLEMENTADO]
+- **FR4: Dashboard Comercial** (Carga masiva CSV, verificación y analíticas). [IMPLEMENTADO]
+- **FR5: Monetización (AdMob & Membresías)** (Banners y suscripciones premium). [IMPLEMENTADO]
 
 ## 5. Requerimientos No Funcionales (NFR)
 - **NFR1: Seguridad** (RLS en Supabase para proteger tablas sensibles).
@@ -41,18 +41,15 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 ## 6. Arquitectura del Sistema
 - **Frontend:** Expo / React Native (Expo Router).
 - **Backend:** Supabase (PostgreSQL).
-- **Automatización:** 
-    - **Edge Function:** `update-exchange-rate-daily` (Consumiendo DolarApi).
-    - **Cron Job:** `update-daily-exchange-rate` (Ejecución diaria 00:05 UTC).
+- **Suscripciones:** Gestión de tier `free` y `premium` con periodos de gracia.
 
 ## 7. Modelo de Datos
-- `profiles`: id, email, role, home_municipality_id.
-- `states`: id, name.
-- `municipalities`: id, state_id, name.
-- `stores`: id, name, location, municipality_id.
+- `profiles`: id, email, role, home_municipality_id, points, level, is_admin.
+- `stores`: id, name, location, municipality_id, is_verified, merchant_id, subscription_tier, subscription_active, subscription_expires_at.
 - `products`: id, name, brand, category, image_url.
 - `prices`: product_id, store_id, price_usd, updated_at, updated_by.
 - `exchange_rates`: id, rate_bcv, rate_parallel, date.
+- `merchant_requests`: id, user_id, store_name, rif, status.
 
 ## 8. Estado del Proyecto (Logros)
 - [x] Configuración inicial Expo + Supabase.
@@ -60,8 +57,11 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 - [x] Automatización de Tasa de Cambio (DolarApi + Cron Job).
 - [x] Carga inicial de catálogo de productos (Harina Pan, Kaly, Juana, etc.).
 - [x] Creación de estructura de tablas regionales.
-- [x] **Selector de Ubicación Premium:** Implementado con Modal y soporte GPS.
-- [x] **Rediseño de Pantalla de Login:** Enfoque 100% OAuth con estética moderna.
+- [x] Selector de Ubicación Premium: Implementado con Modal y soporte GPS.
+- [x] Rediseño de Pantalla de Login: Enfoque 100% OAuth con estética moderna.
+- [x] **Fase 1: Gamificación:** Sistema de puntos, niveles y validación "un solo tap".
+- [x] **Fase 2: Merchant Phase:** Dashboard, Carga masiva CSV y Sello de Verificación.
+- [x] **Administración:** Panel central para aprobación de comercios y gestión de membresías.
 
 ---
 
@@ -85,76 +85,21 @@ Jooz (SincroVzla) es una aplicación móvil diseñada para mitigar el impacto de
 - [x] **AdMob Integrado:** Banners configurados en Home/Búsqueda e Intersticiales en navegación de categorías.
 - [x] **Gestión de IDs:** Componente `AdBanner` que maneja IDs de prueba y producción según el entorno.
 
-## 10. Siguientes Pasos (Roadmap Inmediato)
+### 9.5 Gamificación y Crowdsourcing (Fase 1)
+- [x] **Puntos y Niveles:** Perfil de usuario dinámico que muestra progreso y recompensas.
+- [x] **Validación Rápida:** Botón en detalle de producto para confirmar precios con un toque.
 
-1.  **Refinamiento de UI/UX:**
-    *   Mejorar la velocidad de carga de imágenes (optimización y caché).
-    *   Afinar micro-interacciones y animaciones de carga.
+### 9.6 Alianza con Comercios y B2B (Fase 2)
+- [x] **Registro de Comerciantes:** Flujo para solicitar verificación de tienda con RIF.
+- [x] **Merchant Dashboard:** Gestión de inventario propio y botón de "Vigencia Total" de precios.
+- [x] **Batch Update:** Sistema de importación vía CSV para carga masiva de catálogos.
+- [x] **Ordenamiento Híbrido:** Algoritmo que prioriza tiendas locales verificadas manteniendo el enfoque en el ahorro.
 
-## 11. Estrategia de Crecimiento y Crowdsourcing (Próximas Fases)
+### 9.7 Administración y Monetización
+- [x] **Panel Administrativo:** Interfaz exclusiva para moderadores para aprobar o rechazar comercios.
+- [x] **Membresías Premium:** Estructura para activar suscripciones (inicialmente de cortesía por 6 meses).
 
-### Fase 1: Gamificación Básica (Bajo Esfuerzo / Alto Impacto)
-El objetivo es reducir la fricción. Validar un precio existente es más fácil que crear uno nuevo.
-
-#### 1.1 Sistema de Validación "Un Solo Tap"
-Permite que los usuarios confirmen si un precio sigue vigente.
-*   **Mecánica:** En la vista de detalle del producto, añadir un botón: "¿Sigue este precio igual? [SÍ] [NO]".
-*   **Incentivo:** 5 puntos por confirmación, 20 puntos por actualización.
-
-#### 1.2 Niveles e Insignias
-Implementación de un sistema de progresión para fomentar la retención.
-
-| Nivel | Insignia | Puntos Necesarios | Beneficio en App |
-| :--- | :--- | :--- | :--- |
-| 1 | Novato del Ahorro | 0 - 500 | Acceso básico. |
-| 2 | Explorador Local | 501 - 2,000 | Icono distintivo en perfil. |
-| 3 | Cazador de Ofertas | 2,001 - 5,000 | 24h sin publicidad por cada 5 reportes. |
-| 4 | Centinela | 5,001 - 15,000 | Capacidad de reportar errores en nombres de tiendas. |
-| 5 | Leyenda de Jooz | 15,001+ | Moderador de comunidad / Sin anuncios permanente. |
-
-#### 1.3 Base de Datos (Supabase)
-Modificar la tabla `profiles` y crear `price_validations`:
-
-```sql
--- Extensión de profiles
-ALTER TABLE profiles ADD COLUMN points INTEGER DEFAULT 0;
-ALTER TABLE profiles ADD COLUMN level INTEGER DEFAULT 1;
-
--- Nueva tabla de Log de Validaciones
-CREATE TABLE price_validations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    price_id UUID REFERENCES prices(id),
-    user_id UUID REFERENCES profiles(id),
-    is_correct BOOLEAN,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-```
-
-### Fase 2: Plan de Alianza con Comercios (Esfuerzo Medio)
-Transformar a los dueños de bodegones y tiendas en tus principales aliados para que ellos mismos carguen sus inventarios.
-
-#### 2.1 El "Sello de Verificación"
-*   **Propuesta:** Los comercios que actualicen sus precios diariamente reciben un "Check Azul".
-*   **Beneficio para el comercio:** Sus productos aparecen de primero en las búsquedas locales.
-*   **Registro:** Crear un flujo de "Solicitud de Perfil Comercial" donde adjunten una foto del RIF.
-
-#### 2.2 Pasos para la Opción de Comercios
-1.  **Dashboard Simplificado:** Una vista en la App (protegida por el RLS de Supabase mediante el rol `merchant`) donde vean su lista de productos.
-2.  **Actualización Masiva:** Función de "Marcar todos como vigentes hoy" para ahorrar tiempo.
-3.  **Análisis de Competencia:** Mostrarles de forma anónima si sus precios están por encima o por debajo del promedio de su municipio.
-
-#### 2.3 Base de Datos (Supabase)
-
-```sql
--- Modificación de stores para verificación
-ALTER TABLE stores ADD COLUMN is_verified BOOLEAN DEFAULT false;
-ALTER TABLE stores ADD COLUMN merchant_id UUID REFERENCES profiles(id);
-
--- RLS para que el comerciante solo edite sus precios
-CREATE POLICY "Comerciantes pueden actualizar sus propios precios"
-ON prices FOR UPDATE
-USING (store_id IN (SELECT id FROM stores WHERE merchant_id = auth.uid()));
-```
+## 10. Próximas Fases
 
 ### Fase 3: Automatización con IA/OCR (Esfuerzo Alto)
 Eliminar la necesidad de escribir manualmente mediante el procesamiento de fotos de facturas o habladores de precios.
